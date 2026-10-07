@@ -1,10 +1,13 @@
-"""Thin client for textbook-retrieval's semantic search API (POST /retrieve-content)."""
+"""Thin client for textbook-retrieval's semantic search API (POST /retrieve-content).
+
+One attempt, fails fast -- see core/exceptions.py for why this doesn't retry
+internally.
+"""
 
 import httpx
 
 from core.config import HTTP_TIMEOUT_SECONDS, RETRIEVAL_API_BASE
-
-_MAX_ATTEMPTS = 3
+from core.exceptions import UpstreamUnavailable
 
 
 def retrieve_content(
@@ -27,15 +30,18 @@ def retrieve_content(
         "top_k_images": top_k_images,
     }
     url = f"{RETRIEVAL_API_BASE}/retrieve-content"
-    last_exc: Exception | None = None
-    for attempt in range(_MAX_ATTEMPTS):
-        try:
-            response = httpx.post(url, json=payload, timeout=HTTP_TIMEOUT_SECONDS)
-            if response.status_code >= 500:
-                last_exc = RuntimeError(f"{url} -> HTTP {response.status_code}")
-                continue
-            response.raise_for_status()
-            return response.json()
-        except httpx.TimeoutException as exc:
-            last_exc = exc
-    raise RuntimeError(f"retrieval API unreachable after {_MAX_ATTEMPTS} attempts: {url}") from last_exc
+    try:
+        response = httpx.post(url, json=payload, timeout=HTTP_TIMEOUT_SECONDS)
+    except httpx.TimeoutException:
+        raise UpstreamUnavailable(
+            "The textbook search service didn't respond in time -- it's likely "
+            "waking up from idle (free-tier cold start, ~20-30s) or busy calling "
+            "its embedding provider. Wait a few seconds and try the same call again."
+        )
+    if response.status_code >= 500:
+        raise UpstreamUnavailable(
+            f"The textbook search service returned HTTP {response.status_code} -- "
+            "likely still starting up. Wait a few seconds and try again."
+        )
+    response.raise_for_status()
+    return response.json()

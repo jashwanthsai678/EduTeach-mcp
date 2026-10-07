@@ -1,29 +1,31 @@
 """Thin client for eduteach-textbook-api (the read-only published-content REST API).
 
-Retries on timeout/5xx because the upstream Render free-tier service cold-starts
-slowly after inactivity -- same assumption textbook-retrieval's api_client.py makes.
+One attempt, fails fast -- see core/exceptions.py for why this doesn't retry
+internally.
 """
 
 import httpx
 
 from core.config import CATALOG_API_BASE, HTTP_TIMEOUT_SECONDS
-
-_MAX_ATTEMPTS = 3
+from core.exceptions import UpstreamUnavailable
 
 
 def _get(path: str, params: dict | None = None) -> httpx.Response:
     url = f"{CATALOG_API_BASE}{path}"
-    last_exc: Exception | None = None
-    for attempt in range(_MAX_ATTEMPTS):
-        try:
-            response = httpx.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
-            if response.status_code >= 500:
-                last_exc = RuntimeError(f"{url} -> HTTP {response.status_code}")
-                continue
-            return response
-        except httpx.TimeoutException as exc:
-            last_exc = exc
-    raise RuntimeError(f"catalog API unreachable after {_MAX_ATTEMPTS} attempts: {url}") from last_exc
+    try:
+        response = httpx.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
+    except httpx.TimeoutException:
+        raise UpstreamUnavailable(
+            "The textbook catalog service didn't respond in time -- it's likely "
+            "waking up from idle (free-tier cold start, ~20-30s). Wait a few "
+            "seconds and try the same call again."
+        )
+    if response.status_code >= 500:
+        raise UpstreamUnavailable(
+            f"The textbook catalog service returned HTTP {response.status_code} -- "
+            "likely still starting up. Wait a few seconds and try again."
+        )
+    return response
 
 
 def list_books(

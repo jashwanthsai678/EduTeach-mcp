@@ -85,8 +85,25 @@ URL + `/mcp`.
 - ✅ Core client logic (`core/`) verified against both live upstream APIs.
 - ✅ MCP server verified end-to-end locally (`tools/list` and `tools/call`
   over streamable-HTTP).
-- ⬜ Not yet deployed.
-- ⬜ Not yet added as a connector in Claude.
+- ✅ Deployed on Render at `https://eduteach-mcp.onrender.com/mcp`.
+- ✅ Added as a connector in Claude.
+- ✅ **Fail-fast on cold starts.** Both upstream services are free-tier Render
+  and cold-start in ~20-30s after idling; this connector itself is also a
+  free-tier Render service. With three such services chained, a naive
+  internal-retry approach can block well past what the calling MCP client
+  will wait, surfacing as a hard "Failed" even though the upstream would
+  have come up fine moments later. Fixed by making `core/catalog_client.py`
+  / `core/retrieval_client.py` try once with a ~20s timeout and raise
+  `UpstreamUnavailable` with a message telling the caller to retry, instead
+  of blocking for minutes -- the MCP SDK surfaces that message to Claude
+  directly, which can then retry the same tool call itself.
+- ⬜ **Keep-warm ping not yet set up.** Without one, the *first* call after
+  ~15 min idle will still show this cold-start message once before
+  succeeding on retry. Recommended: an external scheduler (e.g.
+  cron-job.org, free) hitting all three health endpoints every ~10 min:
+  `eduteach-mcp.onrender.com` (add a `/health` route if pinging this one),
+  `eduteach-textbook-api.onrender.com/published/books`,
+  `text-book-rag.onrender.com/health`.
 - ⬜ ChatGPT Custom GPT Action (OpenAPI wrapper over the same `core/tools.py`)
   not yet built -- planned as a second interface on this same core, once the
   MCP side is confirmed working end-to-end from inside Claude.

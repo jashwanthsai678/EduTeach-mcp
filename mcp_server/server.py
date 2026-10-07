@@ -12,6 +12,8 @@ Deployed:      streamable-http transport, bound to 0.0.0.0:$PORT (see Dockerfile
 import os
 
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from core import tools
 
@@ -23,12 +25,23 @@ mcp = FastMCP(
         "call list_books (if you don't already have the exact book_id) then "
         "get_chapter for the full, authoritative text. Only use search_textbook "
         "when the user asks about a topic without naming where to find it -- it "
-        "only covers a subset of books that have been semantically indexed."
+        "only covers a subset of books that have been semantically indexed. "
+        "The underlying services are free-tier and can take ~20-30s to wake up "
+        "from idle -- if a tool call errors saying the service is waking up or "
+        "didn't respond in time, simply call the same tool again once; it will "
+        "usually succeed on the retry."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
     stateless_http=True,
 )
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request: Request) -> JSONResponse:
+    """Plain health check, separate from the MCP protocol endpoint -- for
+    uptime/keep-warm pingers that just need a simple GET to hit."""
+    return JSONResponse({"status": "ok"})
 
 
 @mcp.tool()
