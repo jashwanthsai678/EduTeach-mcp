@@ -1,9 +1,11 @@
 """Remote MCP server exposing EduTeach's published textbook content to Claude.
 
-Three tools, mirroring core/tools.py:
+Four tools:
   - list_books       : discover a book_id from board/grade/subject/language
   - get_chapter      : exact, full-content lookup once the book/chapter is known
   - search_textbook  : semantic search for a topic when the exact location isn't known
+  - view_image       : fetch one image's real bytes so Claude can actually see it
+                        (vision), not just infer relevance from its caption text
 
 Run locally:   python -m mcp_server.server
 Deployed:      streamable-http transport, bound to 0.0.0.0:$PORT (see Dockerfile)
@@ -11,11 +13,12 @@ Deployed:      streamable-http transport, bound to 0.0.0.0:$PORT (see Dockerfile
 
 import os
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Image
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from core import tools
+from core.image_fetch import fetch_image
 
 mcp = FastMCP(
     name="eduteach-textbook-connector",
@@ -29,9 +32,13 @@ mcp = FastMCP(
         "The underlying services are free-tier and can take ~20-30s to wake up "
         "from idle -- if a tool call errors saying the service is waking up or "
         "didn't respond in time, simply call the same tool again once; it will "
-        "usually succeed on the retry. Both tools return real textbook images "
-        "(a usable `url` + `caption`, not just text) -- when an image is relevant "
-        "to what you're explaining, embed it in your answer as a markdown image "
+        "usually succeed on the retry. get_chapter and search_textbook return "
+        "real textbook images (a usable `url` + `caption`, not just text). "
+        "When a caption looks relevant to what you're explaining, call "
+        "view_image(url) first to actually look at it before deciding -- this "
+        "lets you confirm it genuinely matches rather than guessing from the "
+        "caption alone, and skip ones that don't. For images you confirm are "
+        "relevant, embed them in your answer as a markdown image "
         "(![caption](url)), especially for young students who benefit from "
         "seeing the actual textbook picture, not just reading about it. Don't "
         "just report that images exist without showing the relevant ones."
@@ -120,6 +127,20 @@ def search_textbook(
         top_k_text=top_k_text,
         top_k_images=top_k_images,
     )
+
+
+@mcp.tool()
+def view_image(url: str) -> Image:
+    """Fetch one textbook image's real pixels so you can actually see it.
+
+    Use this before embedding an image whose caption looks relevant, to
+    confirm it genuinely matches what you're explaining -- rather than only
+    ever trusting the caption text. Pass a `url` exactly as returned by
+    get_chapter or search_textbook; other URLs are refused.
+    """
+    data, mime_type = fetch_image(url)
+    image_format = mime_type.split("/")[-1] if "/" in mime_type else "jpeg"
+    return Image(data=data, format=image_format)
 
 
 if __name__ == "__main__":

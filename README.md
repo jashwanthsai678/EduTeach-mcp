@@ -38,6 +38,11 @@ eduteach-textbook-api          textbook-retrieval
   board/grade/subject resolves to more than one book. Only covers books that
   have actually been indexed in Qdrant (a subset of the full catalog as of
   writing) -- `get_chapter` is the complete-coverage fallback.
+- **`view_image(url)`** -- fetches one image's real bytes (as a native MCP
+  image block) so Claude can actually see it via vision before deciding to
+  include it, instead of only ever inferring relevance from its caption
+  text. Only accepts URLs from known textbook-image storage hosts (not an
+  open proxy for arbitrary URLs).
 
 ## Routing rule this encodes
 
