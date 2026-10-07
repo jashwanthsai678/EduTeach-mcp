@@ -29,7 +29,12 @@ mcp = FastMCP(
         "The underlying services are free-tier and can take ~20-30s to wake up "
         "from idle -- if a tool call errors saying the service is waking up or "
         "didn't respond in time, simply call the same tool again once; it will "
-        "usually succeed on the retry."
+        "usually succeed on the retry. Both tools return real textbook images "
+        "(a usable `url` + `caption`, not just text) -- when an image is relevant "
+        "to what you're explaining, embed it in your answer as a markdown image "
+        "(![caption](url)), especially for young students who benefit from "
+        "seeing the actual textbook picture, not just reading about it. Don't "
+        "just report that images exist without showing the relevant ones."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
@@ -67,6 +72,11 @@ def get_chapter(book_id: str, chapter_number: int) -> dict:
     Prefer this over search_textbook whenever the user names a specific
     textbook/chapter directly -- it returns the complete chapter, covers every
     published book, and costs no embedding/search overhead.
+
+    The returned `content` has `<img id="...">` placeholders matched by
+    `image_id` in the `images` list -- when explaining a part of the chapter
+    that has a nearby image, embed that image (markdown: ![caption](url))
+    alongside your explanation instead of only using the text.
     """
     return tools.get_chapter(book_id=book_id, chapter_number=chapter_number)
 
@@ -94,6 +104,10 @@ def search_textbook(
     Only a subset of published books are indexed for search. If this returns
     no useful results for a book you expect to have content, fall back to
     list_books + get_chapter instead.
+
+    The `images` result list has real textbook photos relevant to the query
+    (`caption` + `url`) -- embed the relevant ones in your answer as markdown
+    images, don't just describe them in words.
     """
     return tools.search_textbook(
         query=query,
