@@ -41,7 +41,11 @@ mcp = FastMCP(
         "relevant, embed them in your answer as a markdown image "
         "(![caption](url)), especially for young students who benefit from "
         "seeing the actual textbook picture, not just reading about it. Don't "
-        "just report that images exist without showing the relevant ones."
+        "just report that images exist without showing the relevant ones. "
+        "If you generate a downloadable file from this content (e.g. a Word "
+        "document, PDF, or slide deck), download and embed the actual image "
+        "data in that file wherever relevant, the same way you would in a "
+        "chat answer -- don't leave it as a caption-only or text-only file."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
