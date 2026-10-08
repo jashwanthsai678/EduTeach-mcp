@@ -57,11 +57,19 @@ eduteach-textbook-api          textbook-retrieval
   sheet" requests (not a simulation). Pass structured content, not HTML: a
   topic, optional one-line goal/floor, and the 6 buckets (Refresher, Concept,
   Real Life, Challenge, Level Set, Explore -- Refresher and Real Life are
-  optional, the rest required). `eduteach-simulation-host` lays this out
-  using EduTeach's real prep-sheet design and renders it to a PDF; the
-  returned `url` points at that PDF. The Refresher bucket is filled from
-  Claude/ChatGPT's own memory of an earlier lesson in the same conversation
-  -- there's no tool involved in recalling it.
+  optional, the rest required). This isn't freeform -- the tool's own
+  description carries exact, non-negotiable authoring rules per bucket (e.g.
+  Concept's teaching example must be a small handheld object, never the same
+  one Challenge uses; Explore's details must all read as the teacher
+  speaking, "Tell students that/to..."; Level Set is always exactly 3
+  bullets with a fixed structure), all grounded in the textbook excerpt
+  already fetched this conversation -- never inventing facts.
+  `eduteach-simulation-host` lays this out using EduTeach's real prep-sheet
+  design and renders it to a PDF; the returned `url` points at that PDF. The
+  Refresher bucket is filled from Claude/ChatGPT's own memory of an earlier
+  topic prepped *in the same conversation* -- there's no tool or storage
+  involved in recalling it, so a brand-new chat has no previous Explore to
+  draw on and Refresher is simply omitted (a known v1 limitation, not a bug).
 
 ## Routing rule this encodes
 

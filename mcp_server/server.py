@@ -62,17 +62,9 @@ mcp = FastMCP(
         "data in that file wherever relevant, the same way you would in a "
         "chat answer -- don't leave it as a caption-only or text-only file. "
         "If the user asks for a lesson prep sheet / prep material (not a "
-        "simulation), call create_prep_sheet with the 6-bucket content "
-        "(Refresher, Concept, Real Life, Challenge, Level Set, Explore) drawn "
-        "from the textbook content already fetched in this conversation -- "
-        "write the content yourself as structured fields (title/minutes/"
-        "bullets/images/watch), never as HTML. Only include `refresher` if an "
-        "earlier lesson was actually discussed earlier in this same "
-        "conversation (use your own memory of it -- there is no tool for "
-        "this); omit it entirely for a first lesson. Only include `real_life` "
-        "if the topic has a genuine real-life tie-in. Reuse real image URLs "
-        "from get_chapter/search_textbook where they fit a section, don't "
-        "invent image URLs."
+        "simulation), use create_prep_sheet -- read that tool's own "
+        "description closely before calling it, it has exact, non-negotiable "
+        "rules for what each of the 6 buckets must contain."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
@@ -208,16 +200,99 @@ def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
     """Render a 6-bucket lesson prep sheet to a PDF and get back a shareable URL.
 
     Use this for "create the prep material/prep sheet" requests -- NOT for
-    "create a simulation" (use create_simulation for that instead). Pass
-    structured content, not HTML: `topic`, optional one-line `goal`/`floor`,
-    and the 6 buckets -- `refresher` (only if an earlier lesson in this
-    conversation needs recapping, omit otherwise), `concept` (required),
-    `real_life` (only if there's a genuine tie-in, omit otherwise),
-    `challenge`, `level_set`, `explore` (all required). Each bucket is
-    {title, minutes?, bullets[], image? (one) or images? (several), watch?
-    (a likely misconception + one-line fix)}. Reuse real textbook image URLs
-    from get_chapter/search_textbook where relevant -- don't invent URLs.
-    The returned `url` points to a real PDF the user can open directly.
+    "create a simulation" (use create_simulation for that instead).
+
+    Before writing any bucket, assemble a SHARED CONTEXT in your own
+    reasoning (don't send it as a field -- it just grounds what you write):
+    the real textbook excerpt for this topic (from get_chapter/
+    search_textbook, already fetched this conversation), the FLOOR
+    (weakest-child fallback path, if the user gave one or it's inferable),
+    the named misconception for this topic (if any), and -- only if an
+    EARLIER topic was already prepped in THIS SAME conversation -- that
+    earlier topic's Explore bullets, verbatim, from your own memory of
+    generating them. If this is the first topic in the conversation, there
+    is no previous Explore; proceed without it (see `refresher` below).
+
+    Then write each bucket as structured fields -- never HTML, never
+    inventing facts/numbers/terms the textbook excerpt doesn't contain --
+    following these exact rules:
+
+    **refresher** (omit this whole field entirely if there's no previous
+    topic in this conversation -- don't send an empty one): exactly 3
+    bullets, built ENTIRELY from the previous topic's Explore, introducing
+    nothing new. (1) Name the real-life thing the previous Explore pointed
+    students to, by name. (2) A genuine check-in on whether they actually
+    noticed it -- not an invented question. (3) Turn whatever they noticed
+    into the doorway to today's topic.
+
+    **concept** (required): 3 bullets. Every definition/number/term must
+    come from the textbook excerpt -- never invented or contradicted. Your
+    teaching example may differ from the book's own illustration -- pick a
+    SMALL object the teacher can hold and turn in their hand (a cup,
+    matchbox, book); NEVER a full-size object like a chair or desk. Bullet 1
+    is the easy entry: if a FLOOR exists, that sentence IS bullet 1 --
+    don't invent a different easy case. At least one bullet must state the
+    MECHANISM, not just the fact (e.g. "the straight edges touch flush, so
+    nothing is left over", not just "it fits"). Set `watch` to the named
+    misconception as a live if-then ("if a child says/thinks X, the teacher
+    does Y") -- a concrete, physical demonstration of the wrong idea
+    failing, not a generic "address misconceptions" line. Never demonstrate
+    with the same object `challenge` uses below -- if Challenge returns to
+    the book's own picture, Concept must use a smaller, different object.
+
+    **real_life** (omit entirely if there's no genuine real-life tie-in for
+    this topic): 3 bullets connecting the idea to the children's own world.
+    Teacher-led only -- no "ask pairs to...", no group work, no task to go
+    do (that belongs in `challenge`). Prefer concrete instances the
+    textbook itself names; only invent a local one if the book names none.
+    Each bullet names ONE real instance, connects it back to Concept's
+    idea, then works it through aloud with the answer stated -- never leave
+    a question unresolved. If this region has a common everyday word for
+    the object, use it alongside the English term once (e.g. "a matka
+    (water pot)") -- ONLY if you are confident it's a real, correct
+    regional word; never guess at one. Narrate as shared knowledge everyone
+    already has (the village well, the market) -- never "imagine your own
+    X at home" (that's `explore`'s job, not this one's).
+
+    **challenge** (required): stage PLAY -> REFLECT -> ACT within the
+    bullets. If the textbook excerpt itself names an activity for this
+    page (check for activity-tagged content from get_chapter), name the
+    challenge in the book's own words and build PLAY/REFLECT/ACT around it.
+    If the book sets no task, invent an appropriate grade-level activity
+    yourself. PLAY must carry a GENUINE either/or -- a pair actually picks
+    one path and the other goes unused, not "do step A then step B"
+    dressed up as a choice. If a FLOOR exists, stage it as the easy
+    fallback path inside PLAY itself, not a separate ungraded warm-up.
+    REFLECT is a 30-second "what worked?" turn-and-tell -- never about
+    mistakes. ACT applies the idea to one real problem with the worked
+    answer stated in full -- the teacher should never have to compute live
+    in front of the class. Use `images` (not `image`) if the book's own
+    picture is relevant here.
+
+    **level_set** (required): exactly 3 bullets, every child's independent
+    evidence. (1) One clause recapping today's idea in the SAME wording
+    `concept` used, then a partner self-check -- if the misconception is
+    relevant, phrase the check as a genuine two-option pick (the wrong
+    belief gets equal footing, not a yes/no that only ever collects yes).
+    (2) A reflection on what was easiest or most interesting today -- never
+    on errors. (3) A choice that literally leaves the room: something to
+    go notice outside class, framed as an invitation, never homework,
+    nothing to write or collect.
+
+    **explore** (required): exactly 3 bullets. Each is a short headline
+    plus a detail reporting the TEACHER'S act of telling the class -- every
+    detail must start "Tell students that..." or "Tell students to...".
+    Never phrase a detail as a direct command to the child (e.g. "Look at a
+    chair from above.") -- that reads as a worksheet, not a teacher
+    speaking. Tie each point to today's idea, using something the textbook
+    itself named where possible. No pair work or discussion staged here --
+    that happens in tomorrow's `refresher`. The third bullet must be
+    specific and nameable enough for a future Refresher to recall it by
+    name -- never a vague "notice things around you."
+
+    Reuse real textbook image URLs from get_chapter/search_textbook where
+    they genuinely fit a section -- don't invent URLs. The returned `url`
+    points to a real PDF the user can open directly.
     """
     return tools.create_prep_sheet(prep_sheet=prep_sheet)
 
