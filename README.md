@@ -28,6 +28,10 @@ eduteach-textbook-api          textbook-retrieval
 
 - **`list_books(board?, grade?, subject?, language?)`** -- discover a book's
   exact `book_id` from natural-language filters.
+- **`list_chapters(book_id)`** -- a book's chapter titles/page ranges, no
+  content or images. Lets the model see what a book covers, or pick the
+  right chapter_number, without paying the cost of fetching full chapter
+  content just to see titles.
 - **`get_chapter(book_id, chapter_number)`** -- full, clean chapter text +
   image URLs. **Preferred path** whenever the user names a specific
   textbook/chapter directly -- covers every published book, no search

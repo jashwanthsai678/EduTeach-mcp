@@ -37,6 +37,16 @@ def get_chapter(book_id: str, chapter_number: int) -> dict:
     return catalog_client.get_chapter(book_id=book_id, chapter_number=chapter_number)
 
 
+def list_chapters(book_id: str) -> list[dict]:
+    """List a book's published chapters (number, title, page range) -- no content or images.
+
+    Use this to see what a book covers, or to pick the right chapter_number
+    before calling get_chapter, without paying the cost of fetching full
+    chapter content (and every image) just to see titles.
+    """
+    return catalog_client.list_chapters(book_id=book_id)
+
+
 def _resolve_book_id(
     board: str | None, grade: str | None, subject: str | None, language: str | None
 ) -> tuple[str | None, list[dict]]:

@@ -1,7 +1,8 @@
 """Remote MCP server exposing EduTeach's published textbook content to Claude.
 
-Four tools:
+Five tools:
   - list_books       : discover a book_id from board/grade/subject/language
+  - list_chapters    : a book's chapter titles/pages, no content or images
   - get_chapter      : exact, full-content lookup once the book/chapter is known
   - search_textbook  : semantic search for a topic when the exact location isn't known
   - view_image       : fetch one image's real bytes so Claude can actually see it
@@ -26,7 +27,10 @@ mcp = FastMCP(
         "Tools for grounding answers in real, published school-textbook content "
         "(TS SCERT boards so far). If the user names a specific textbook/chapter, "
         "call list_books (if you don't already have the exact book_id) then "
-        "get_chapter for the full, authoritative text. Only use search_textbook "
+        "get_chapter for the full, authoritative text. Call list_chapters first "
+        "if you need to see what a book covers, or to pick the right chapter "
+        "number, without paying the cost of fetching full content just to see "
+        "titles. Only use search_textbook "
         "when the user asks about a topic without naming where to find it -- it "
         "only covers a subset of books that have been semantically indexed. "
         "The underlying services are free-tier and can take ~20-30s to wake up "
@@ -90,6 +94,17 @@ def get_chapter(book_id: str, chapter_number: int) -> dict:
     alongside your explanation instead of only using the text.
     """
     return tools.get_chapter(book_id=book_id, chapter_number=chapter_number)
+
+
+@mcp.tool()
+def list_chapters(book_id: str) -> list[dict]:
+    """List a book's chapters (number, title, page range) -- no content or images.
+
+    Use this to see what a book covers, or to pick the right chapter_number
+    before calling get_chapter, instead of fetching full chapter content (and
+    every image) just to find titles.
+    """
+    return tools.list_chapters(book_id=book_id)
 
 
 @mcp.tool()
