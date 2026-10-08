@@ -12,6 +12,10 @@ RETRIEVAL_API_BASE = os.environ.get(
     "RETRIEVAL_API_BASE", "https://text-book-rag.onrender.com"
 ).rstrip("/")
 
+SIMULATION_HOST_BASE = os.environ.get(
+    "SIMULATION_HOST_BASE", "https://eduteach-simulation-host.onrender.com"
+).rstrip("/")
+
 # Both upstream APIs are free-tier Render services that cold-start in ~25-30s
 # after ~15 min idle. A tool call that blocks that long (or longer, with
 # internal retries stacked on top) outlasts the calling MCP client's own

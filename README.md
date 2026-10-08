@@ -47,6 +47,12 @@ eduteach-textbook-api          textbook-retrieval
   include it, instead of only ever inferring relevance from its caption
   text. Only accepts URLs from known textbook-image storage hosts (not an
   open proxy for arbitrary URLs).
+- **`create_simulation(html)`** -- for "can you make a simulation of this?"
+  requests (not static images). Pass a complete, self-contained HTML/CSS/JS
+  page; it's uploaded as-is to `eduteach-simulation-host` and a public URL
+  comes back to share with the user, who opens it in their own browser where
+  it runs live and interactively. This connector never renders or executes
+  the page itself.
 
 ## Routing rule this encodes
 

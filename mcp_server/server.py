@@ -1,12 +1,13 @@
 """Remote MCP server exposing EduTeach's published textbook content to Claude.
 
-Five tools:
-  - list_books       : discover a book_id from board/grade/subject/language
-  - list_chapters    : a book's chapter titles/pages, no content or images
-  - get_chapter      : exact, full-content lookup once the book/chapter is known
-  - search_textbook  : semantic search for a topic when the exact location isn't known
-  - view_image       : fetch one image's real bytes so Claude can actually see it
+Six tools:
+  - list_books        : discover a book_id from board/grade/subject/language
+  - list_chapters     : a book's chapter titles/pages, no content or images
+  - get_chapter       : exact, full-content lookup once the book/chapter is known
+  - search_textbook   : semantic search for a topic when the exact location isn't known
+  - view_image        : fetch one image's real bytes so Claude can actually see it
                         (vision), not just infer relevance from its caption text
+  - create_simulation : host a generated interactive HTML/CSS/JS page, get a URL
 
 Run locally:   python -m mcp_server.server
 Deployed:      streamable-http transport, bound to 0.0.0.0:$PORT (see Dockerfile)
@@ -170,6 +171,22 @@ def view_image(url: str) -> Image:
     data, mime_type = fetch_image(url)
     image_format = mime_type.split("/")[-1] if "/" in mime_type else "jpeg"
     return Image(data=data, format=image_format)
+
+
+@mcp.tool()
+def create_simulation(html: str) -> dict:
+    """Host an interactive HTML/CSS/JS simulation and get back a shareable URL.
+
+    Use this when the user asks for an interactive simulation or demo of a
+    concept (e.g. "can you make a simulation of this?"), not a static image
+    or diagram. Write a COMPLETE, self-contained HTML page -- inline
+    <style>/<script>, no external files -- implementing the simulation, and
+    pass it here. It's uploaded as-is; share the returned `url` with the user
+    so they can open it in their own browser, where it runs live and
+    interactively. Max 300KB; must be a real page (a <html> tag), not a
+    fragment.
+    """
+    return tools.create_simulation(html=html)
 
 
 if __name__ == "__main__":

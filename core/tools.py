@@ -9,7 +9,7 @@ this topic" queries, and only covers the subset of books currently indexed
 in Qdrant.
 """
 
-from core import catalog_client, retrieval_client
+from core import catalog_client, retrieval_client, simulation_client
 
 
 def list_books(
@@ -110,3 +110,15 @@ def search_textbook(
     result["ambiguous"] = False
     result["resolved_book_id"] = resolved_book_id
     return result
+
+
+def create_simulation(html: str) -> dict:
+    """Host a self-contained interactive HTML/CSS/JS page and get back a public URL.
+
+    Use this when the user asks for an interactive simulation/demo of a concept
+    (not a static image). Write a complete, self-contained HTML page (inline
+    <style>/<script>, no external file dependencies) and pass it here -- it
+    gets uploaded as-is and the returned url can be shared directly with the
+    user to open in their own browser, where it runs live.
+    """
+    return simulation_client.create_simulation(html=html)
