@@ -25,9 +25,17 @@ mcp = FastMCP(
     name="eduteach-textbook-connector",
     instructions=(
         "Tools for grounding answers in real, published school-textbook content "
-        "(TS SCERT boards so far). If the user names a specific textbook/chapter, "
-        "call list_books (if you don't already have the exact book_id) then "
-        "get_chapter for the full, authoritative text. Call list_chapters first "
+        "(TS SCERT boards so far, more boards may be added later). If the user "
+        "names a specific textbook/chapter, call list_books (if you don't "
+        "already have the exact book_id) then get_chapter for the full, "
+        "authoritative text. If list_books returns MORE THAN ONE match for what "
+        "the user asked (e.g. once multiple state boards publish the same "
+        "grade/subject), do not guess which one they meant and do not call "
+        "get_chapter yet -- ask the user to clarify, naming the real options "
+        "(e.g. \"I found this for Telangana SCERT, AP SCERT, and CBSE -- which "
+        "one does your school follow?\"), then proceed once they answer. Only "
+        "skip asking when there's exactly one match, or the user already named "
+        "the board. Call list_chapters first "
         "if you need to see what a book covers, or to pick the right chapter "
         "number, without paying the cost of fetching full content just to see "
         "titles. Only use search_textbook "
@@ -75,7 +83,9 @@ def list_books(
 
     Use this to find a book's exact book_id from natural-language filters
     (e.g. board="TS SCERT", grade="5", subject="Environmental Studies") before
-    calling get_chapter.
+    calling get_chapter. If this returns more than one match, don't pick one --
+    ask the user which board, naming the real options, then call this again
+    (or get_chapter directly) once they've told you.
     """
     return tools.list_books(board=board, grade=grade, subject=subject, language=language)
 

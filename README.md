@@ -56,6 +56,20 @@ unknown) then `get_chapter`, direct and complete. Vague/topical request
 descriptions are written so Claude picks the right one itself; there's no
 hardcoded routing logic in the server.
 
+## Ambiguity across multiple boards (future-proofing, not yet triggerable)
+
+Today every grade/subject combination maps to exactly one book (TS SCERT is
+the only board published), so `list_books` never actually returns more than
+one match. Once other state boards publish the same grade/subject, the same
+request ("explain chapter 1 of class 5 EVS") could match several real books.
+The instructions explicitly tell the model: if `list_books` returns more
+than one match, don't guess which board the user meant and don't call
+`get_chapter` yet -- ask the user to pick, naming the real options, then
+proceed once they answer. This is a plain conversational turn (the model
+just replies in chat instead of calling a tool), not a new mechanism --
+nothing to build for the back-and-forth itself, only the instruction that
+triggers it at the right moment instead of silently guessing a board.
+
 ## Local run
 
 ```powershell
