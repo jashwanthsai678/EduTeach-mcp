@@ -185,12 +185,20 @@ def create_simulation(html: str) -> dict:
 
     Use this when the user asks for an interactive simulation or demo of a
     concept (e.g. "can you make a simulation of this?"), not a static image
-    or diagram. Write a COMPLETE, self-contained HTML page -- inline
-    <style>/<script>, no external files -- implementing the simulation, and
-    pass it here. It's uploaded as-is; share the returned `url` with the user
-    so they can open it in their own browser, where it runs live and
-    interactively. Max 300KB; must be a real page (a <html> tag), not a
-    fragment.
+    or diagram. Ground the FACTS/sequence/process in the real textbook
+    content already fetched this conversation (get_chapter/search_textbook)
+    -- but design the simulation's own visuals and interaction yourself.
+    It does NOT need to replicate, resemble, or be built "around" the
+    textbook's own images/diagrams/pages -- those are source material for
+    correctness, not a visual template to copy. Build whatever visual
+    representation (shapes, diagrams, animations, controls) best helps a
+    student understand the concept interactively, free of the textbook's
+    own illustration style. Write a COMPLETE, self-contained HTML page --
+    inline <style>/<script>, no external files -- implementing the
+    simulation, and pass it here. It's uploaded as-is; share the returned
+    `url` with the user so they can open it in their own browser, where it
+    runs live and interactively. Max 300KB; must be a real page (a <html>
+    tag), not a fragment.
     """
     return tools.create_simulation(html=html)
 
