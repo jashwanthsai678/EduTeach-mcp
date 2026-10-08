@@ -1,6 +1,6 @@
 """Remote MCP server exposing EduTeach's published textbook content to Claude.
 
-Six tools:
+Seven tools:
   - list_books        : discover a book_id from board/grade/subject/language
   - list_chapters     : a book's chapter titles/pages, no content or images
   - get_chapter       : exact, full-content lookup once the book/chapter is known
@@ -8,6 +8,7 @@ Six tools:
   - view_image        : fetch one image's real bytes so Claude can actually see it
                         (vision), not just infer relevance from its caption text
   - create_simulation : host a generated interactive HTML/CSS/JS page, get a URL
+  - create_prep_sheet : render the 6-bucket lesson prep sheet to a PDF, get a URL
 
 Run locally:   python -m mcp_server.server
 Deployed:      streamable-http transport, bound to 0.0.0.0:$PORT (see Dockerfile)
@@ -21,6 +22,7 @@ from starlette.responses import JSONResponse
 
 from core import tools
 from core.image_fetch import fetch_image
+from core.prep_sheet_schema import PrepSheetRequest
 
 mcp = FastMCP(
     name="eduteach-textbook-connector",
@@ -58,7 +60,19 @@ mcp = FastMCP(
         "If you generate a downloadable file from this content (e.g. a Word "
         "document, PDF, or slide deck), download and embed the actual image "
         "data in that file wherever relevant, the same way you would in a "
-        "chat answer -- don't leave it as a caption-only or text-only file."
+        "chat answer -- don't leave it as a caption-only or text-only file. "
+        "If the user asks for a lesson prep sheet / prep material (not a "
+        "simulation), call create_prep_sheet with the 6-bucket content "
+        "(Refresher, Concept, Real Life, Challenge, Level Set, Explore) drawn "
+        "from the textbook content already fetched in this conversation -- "
+        "write the content yourself as structured fields (title/minutes/"
+        "bullets/images/watch), never as HTML. Only include `refresher` if an "
+        "earlier lesson was actually discussed earlier in this same "
+        "conversation (use your own memory of it -- there is no tool for "
+        "this); omit it entirely for a first lesson. Only include `real_life` "
+        "if the topic has a genuine real-life tie-in. Reuse real image URLs "
+        "from get_chapter/search_textbook where they fit a section, don't "
+        "invent image URLs."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
@@ -187,6 +201,25 @@ def create_simulation(html: str) -> dict:
     fragment.
     """
     return tools.create_simulation(html=html)
+
+
+@mcp.tool()
+def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
+    """Render a 6-bucket lesson prep sheet to a PDF and get back a shareable URL.
+
+    Use this for "create the prep material/prep sheet" requests -- NOT for
+    "create a simulation" (use create_simulation for that instead). Pass
+    structured content, not HTML: `topic`, optional one-line `goal`/`floor`,
+    and the 6 buckets -- `refresher` (only if an earlier lesson in this
+    conversation needs recapping, omit otherwise), `concept` (required),
+    `real_life` (only if there's a genuine tie-in, omit otherwise),
+    `challenge`, `level_set`, `explore` (all required). Each bucket is
+    {title, minutes?, bullets[], image? (one) or images? (several), watch?
+    (a likely misconception + one-line fix)}. Reuse real textbook image URLs
+    from get_chapter/search_textbook where relevant -- don't invent URLs.
+    The returned `url` points to a real PDF the user can open directly.
+    """
+    return tools.create_prep_sheet(prep_sheet=prep_sheet)
 
 
 if __name__ == "__main__":

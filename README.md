@@ -53,6 +53,15 @@ eduteach-textbook-api          textbook-retrieval
   comes back to share with the user, who opens it in their own browser where
   it runs live and interactively. This connector never renders or executes
   the page itself.
+- **`create_prep_sheet(prep_sheet)`** -- for "create the prep material/prep
+  sheet" requests (not a simulation). Pass structured content, not HTML: a
+  topic, optional one-line goal/floor, and the 6 buckets (Refresher, Concept,
+  Real Life, Challenge, Level Set, Explore -- Refresher and Real Life are
+  optional, the rest required). `eduteach-simulation-host` lays this out
+  using EduTeach's real prep-sheet design and renders it to a PDF; the
+  returned `url` points at that PDF. The Refresher bucket is filled from
+  Claude/ChatGPT's own memory of an earlier lesson in the same conversation
+  -- there's no tool involved in recalling it.
 
 ## Routing rule this encodes
 
@@ -136,3 +145,11 @@ URL + `/mcp`.
 - ⬜ ChatGPT Custom GPT Action (OpenAPI wrapper over the same `core/tools.py`)
   not yet built -- planned as a second interface on this same core, once the
   MCP side is confirmed working end-to-end from inside Claude.
+- ⬜ **`create_prep_sheet` built and verified locally** (request shape,
+  rendering, and PDF generation all confirmed working), **but not yet live
+  in production** -- `eduteach-simulation-host` must be redeployed on Render
+  as a **Docker** environment (not its current native Python buildpack) for
+  Playwright's Chromium to run at all; see that repo's README "Render
+  deploy" section. Once that switch is made and the new bucket
+  (`prep-sheets`) exists, this tool will work the same way `create_simulation`
+  does today.

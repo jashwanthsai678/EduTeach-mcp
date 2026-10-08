@@ -24,3 +24,9 @@ SIMULATION_HOST_BASE = os.environ.get(
 # typical cold-start time, and fail fast with a message telling the caller
 # to retry -- rather than silently blocking until the client gives up anyway.
 HTTP_TIMEOUT_SECONDS = float(os.environ.get("HTTP_TIMEOUT_SECONDS", "20"))
+
+# Prep-sheet rendering launches a headless browser and renders a PDF
+# server-side on top of whatever cold-start delay the call already pays --
+# genuinely slower than a normal REST call, so it gets its own, longer budget
+# instead of sharing HTTP_TIMEOUT_SECONDS.
+PREP_SHEET_TIMEOUT_SECONDS = float(os.environ.get("PREP_SHEET_TIMEOUT_SECONDS", "60"))

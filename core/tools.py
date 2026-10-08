@@ -10,6 +10,7 @@ in Qdrant.
 """
 
 from core import catalog_client, retrieval_client, simulation_client
+from core.prep_sheet_schema import PrepSheetRequest
 
 
 def list_books(
@@ -122,3 +123,17 @@ def create_simulation(html: str) -> dict:
     user to open in their own browser, where it runs live.
     """
     return simulation_client.create_simulation(html=html)
+
+
+def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
+    """Render the 6-bucket lesson prep sheet to a PDF and get back a public URL.
+
+    Use this when the user asks for a prep sheet / lesson-prep material (not a
+    simulation). Unlike create_simulation, this doesn't take raw HTML -- pass
+    the structured content (topic, goal, floor, and each bucket's title/
+    minutes/bullets/images/watch-for) and the service lays it out using
+    EduTeach's real prep-sheet design.
+    """
+    return simulation_client.create_prep_sheet(
+        data=prep_sheet.model_dump(exclude_none=True)
+    )
