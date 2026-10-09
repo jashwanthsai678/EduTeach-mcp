@@ -71,6 +71,26 @@ eduteach-textbook-api          textbook-retrieval
   involved in recalling it, so a brand-new chat has no previous Explore to
   draw on and Refresher is simply omitted (a known v1 limitation, not a bug).
 
+## Classroom profile (gates create_prep_sheet / create_simulation)
+
+Before its first call to either output tool in a conversation, the model is
+instructed to ask the teacher a short classroom-profile questionnaire --
+class size, the real ability level of most students relative to the nominal
+grade, and four context toggles (everyday objects available, children can
+move around vs. seated, each child has their own textbook vs. shared,
+Telugu-language help vs. English-only). The answers then shape every
+generation in that conversation (vocabulary/complexity, activity design,
+bilingual labels, etc.) instead of the model assuming a generic classroom.
+
+This is a plain conversational step, not a new tool or stored data -- same
+pattern as the ambiguous-board check above, just a different trigger. A
+plain-language correction later in the same chat (e.g. "we don't have a
+shared textbook anymore") updates it without re-asking the full
+questionnaire. **It does not persist across conversations** -- a new chat
+starts over, same limitation as Refresher. True cross-chat persistence
+would require adding real per-teacher identity (an OAuth connect flow) and
+a database, which is a deliberate v1 trade-off, not built.
+
 ## Routing rule this encodes
 
 Specific request ("chapter 3 of Class 5 EVS") -> `list_books` (if book_id

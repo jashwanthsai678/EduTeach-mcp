@@ -64,7 +64,35 @@ mcp = FastMCP(
         "If the user asks for a lesson prep sheet / prep material (not a "
         "simulation), use create_prep_sheet -- read that tool's own "
         "description closely before calling it, it has exact, non-negotiable "
-        "rules for what each of the 6 buckets must contain."
+        "rules for what each of the 6 buckets must contain. "
+        "CLASSROOM PROFILE: before your FIRST call to create_prep_sheet or "
+        "create_simulation in a conversation, if you haven't already gathered "
+        "one in this same conversation, ask the teacher a short classroom-"
+        "profile questionnaire in plain chat (not a tool call): (1) class "
+        "size; (2) the real ability level of most students relative to the "
+        "nominal grade (e.g. \"Class 5 on paper, but most are at a Class 2-3 "
+        "level\"); (3) whether everyday objects are available for "
+        "demonstrations (e.g. a chair, a notebook) or not; (4) whether "
+        "children can move around during the lesson or must stay seated; "
+        "(5) whether each child has their own textbook or the class shares "
+        "one with the board; (6) whether Telugu-language help should be "
+        "shown alongside English, or English should stay the only teaching "
+        "language. Once answered, treat these as the CLASSROOM PROFILE for "
+        "the rest of THIS conversation and let them shape every subsequent "
+        "create_prep_sheet/create_simulation call -- e.g. the real ability "
+        "level (not the nominal grade) sets vocabulary/complexity, seated-"
+        "only changes what Challenge's PLAY can physically involve, no "
+        "individual textbooks means Concept/Challenge can't assume every "
+        "child is looking at their own page, and Telugu help means adding "
+        "the regional term alongside English where you're confident it's "
+        "correct (same rule create_prep_sheet's real_life bucket already "
+        "has). Do NOT ask this questionnaire again later in the same "
+        "conversation. If the teacher later corrects any part of it with a "
+        "plain sentence (e.g. \"actually we don't have a shared textbook "
+        "anymore\"), update your working understanding and apply the "
+        "correction to anything generated afterward -- no need to re-ask the "
+        "full questionnaire. This profile does not carry over to a new "
+        "conversation; ask again there."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
@@ -199,6 +227,10 @@ def create_simulation(html: str) -> dict:
     `url` with the user so they can open it in their own browser, where it
     runs live and interactively. Max 300KB; must be a real page (a <html>
     tag), not a fragment.
+
+    If you haven't gathered this conversation's CLASSROOM PROFILE yet (see
+    the server-level instructions), ask for it first -- the real ability
+    level in particular should set how complex/wordy the simulation is.
     """
     return tools.create_simulation(html=html)
 
@@ -209,6 +241,12 @@ def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
 
     Use this for "create the prep material/prep sheet" requests -- NOT for
     "create a simulation" (use create_simulation for that instead).
+
+    If you haven't gathered this conversation's CLASSROOM PROFILE yet (see
+    the server-level instructions), ask for it first -- class size, real
+    ability level, resource/seating/textbook/language toggles -- and factor
+    it into everything below (e.g. Challenge's PLAY must fit a seated
+    classroom if that's what the profile says).
 
     Before writing any bucket, assemble a SHARED CONTEXT in your own
     reasoning (don't send it as a field -- it just grounds what you write):
