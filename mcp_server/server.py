@@ -235,11 +235,16 @@ def create_simulation(html: str) -> dict:
     runs live and interactively. Max 300KB; must be a real page (a <html>
     tag), not a fragment.
 
-    CLASSROOM PROFILE -- check this before calling: if you have NOT already
-    gathered one in THIS conversation (for this tool OR create_prep_sheet),
-    STOP and ask the teacher these 6 questions first, as plain chat text (not
-    a tool call), each phrased as lettered options to pick from -- never as
-    one open-ended question, and never skip any of the six:
+    STOP -- READ THIS BEFORE DOING ANYTHING ELSE FOR A SIMULATION REQUEST,
+    including before you write any HTML: have you already gathered this
+    conversation's CLASSROOM PROFILE (for this tool OR create_prep_sheet)? If
+    not, do NOT write the simulation and do NOT call this tool yet -- your
+    very next reply must be ONLY the 6 classroom-profile questions below, as
+    plain chat text, lettered options, nothing else. Having enough textbook
+    content to build the simulation is never a reason to skip this step.
+
+    THE 6 CLASSROOM-PROFILE QUESTIONS (ask ALL SIX, lettered, in order --
+    never open-ended, never skipped):
     (1) Class size -- a) Under 20  b) 20-40  c) Over 40 (or just the number).
     (2) Real ability level of most students vs. the nominal grade --
     a) At grade level  b) Below grade level (say which, if known)
@@ -265,19 +270,29 @@ def create_simulation(html: str) -> dict:
 def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
     """Render a 6-bucket lesson prep sheet to a PDF and get back a shareable URL.
 
-    ALWAYS call this tool for "create the prep material/prep sheet/lesson
-    prep" requests -- do NOT write the lesson yourself as plain chat text
-    instead, even though you're capable of writing one unaided. The whole
-    point is a hosted, consistently-designed PDF the teacher can reopen and
-    share, not inline chat text. NOT for simulations (use create_simulation).
+    STOP -- READ THIS BEFORE DOING ANYTHING ELSE FOR A PREP-MATERIAL REQUEST,
+    including before you write any lesson content in chat: have you already
+    gathered this conversation's CLASSROOM PROFILE (for this tool OR
+    create_simulation)? If not, do NOT write a lesson in chat and do NOT call
+    this tool yet -- your very next reply must be ONLY the 6 classroom-profile
+    questions below, as plain chat text, lettered options, nothing else. This
+    applies even if you already have enough textbook content to answer well
+    -- having the content is never a reason to skip this step.
 
-    CLASSROOM PROFILE -- check this before calling: if you have NOT already
-    gathered one in THIS conversation (for this tool OR create_simulation),
-    STOP and ask the teacher these 6 questions first, as plain chat text (not
-    a tool call), each phrased as lettered options to pick from -- never as
-    one open-ended question, never folded as a side-note into a different
-    question (e.g. a chapter-mismatch clarification), and never skip any of
-    the six:
+    Once the classroom profile is gathered (this turn or an earlier one in
+    this conversation), call this tool -- do not write the lesson yourself as
+    plain chat text instead, even though you are fully capable of writing one
+    unaided. A chat message is not an acceptable substitute here: this tool
+    is the only way to produce an actual file -- a real, stable PDF link the
+    teacher can reopen, print, and share later -- which free-text chat output
+    can never be, no matter how good the content is. If a teacher asks for
+    "prep material" and gets back chat text instead of a link, that request
+    has not actually been fulfilled. NOT for simulations (use
+    create_simulation).
+
+    THE 6 CLASSROOM-PROFILE QUESTIONS (ask ALL SIX, lettered, in order --
+    never open-ended, never folded as a side-note into a different question
+    like a chapter-mismatch clarification, never skipped):
     (1) Class size -- a) Under 20  b) 20-40  c) Over 40 (or just the number).
     (2) Real ability level of most students vs. the nominal grade --
     a) At grade level  b) Below grade level (say which, if known)
