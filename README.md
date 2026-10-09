@@ -91,6 +91,20 @@ starts over, same limitation as Refresher. True cross-chat persistence
 would require adding real per-teacher identity (an OAuth connect flow) and
 a database, which is a deliberate v1 trade-off, not built.
 
+**Known reliability gap, found via real testing (not yet fully solved):**
+the full 6-question spec lives in `create_prep_sheet`'s and
+`create_simulation`'s own tool descriptions (not only the shared server
+instructions), specifically because real testing showed it wasn't reliable
+otherwise -- on ChatGPT, the shared instructions block appeared not to be
+surfaced at all (it skipped tool use and the questionnaire entirely on a
+first attempt), and even on Claude, the questionnaire got compressed into
+an informal 2-of-6 version folded into an unrelated clarifying question
+instead of the literal 6-question spec. Moving the full spec into each
+tool's own description (always part of the MCP tool schema, unlike the
+shared instructions) is the fix for the "not surfaced at all" case; whether
+it's enough to stop a model from paraphrasing/compressing the spec instead
+of following it literally is not yet re-verified against a live retest.
+
 ## Routing rule this encodes
 
 Three cases, once `list_books` has resolved the `book_id`:

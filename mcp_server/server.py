@@ -77,41 +77,14 @@ mcp = FastMCP(
         "data in that file wherever relevant, the same way you would in a "
         "chat answer -- don't leave it as a caption-only or text-only file. "
         "If the user asks for a lesson prep sheet / prep material (not a "
-        "simulation), use create_prep_sheet -- read that tool's own "
-        "description closely before calling it, it has exact, non-negotiable "
-        "rules for what each of the 6 buckets must contain. "
-        "CLASSROOM PROFILE: before your FIRST call to create_prep_sheet or "
-        "create_simulation in a conversation, if you haven't already gathered "
-        "one in this same conversation, ask the teacher a short classroom-"
-        "profile questionnaire in plain chat (not a tool call) -- phrase "
-        "EVERY question as explicit, numbered/lettered options to pick from "
-        "(a quick reply, not an essay), never as an open-ended question: "
-        "(1) Class size -- a) Under 20  b) 20-40  c) Over 40 (or just give "
-        "the number). (2) Real ability level of most students, relative to "
-        "the nominal grade -- a) At grade level  b) Below grade level (say "
-        "which grade if known, e.g. \"Class 5 on paper, most at Class 2-3\") "
-        "c) Mixed levels. (3) Everyday objects for demonstrations -- "
-        "a) Available (e.g. a chair, a notebook)  b) Not available. "
-        "(4) Movement -- a) Children can move around  b) Seated only. "
-        "(5) Textbooks -- a) Each child has their own  b) One shared with "
-        "the board. (6) Language -- a) Add Telugu help alongside English  "
-        "b) English only. Once answered, treat these as the CLASSROOM "
-        "PROFILE for "
-        "the rest of THIS conversation and let them shape every subsequent "
-        "create_prep_sheet/create_simulation call -- e.g. the real ability "
-        "level (not the nominal grade) sets vocabulary/complexity, seated-"
-        "only changes what Challenge's PLAY can physically involve, no "
-        "individual textbooks means Concept/Challenge can't assume every "
-        "child is looking at their own page, and Telugu help means adding "
-        "the regional term alongside English where you're confident it's "
-        "correct (same rule create_prep_sheet's real_life bucket already "
-        "has). Do NOT ask this questionnaire again later in the same "
-        "conversation. If the teacher later corrects any part of it with a "
-        "plain sentence (e.g. \"actually we don't have a shared textbook "
-        "anymore\"), update your working understanding and apply the "
-        "correction to anything generated afterward -- no need to re-ask the "
-        "full questionnaire. This profile does not carry over to a new "
-        "conversation; ask again there."
+        "simulation), ALWAYS use create_prep_sheet -- never write the lesson "
+        "yourself as plain chat text. Read that tool's own description "
+        "closely before calling it: it has exact, non-negotiable rules for "
+        "what each of the 6 buckets must contain, AND the full classroom-"
+        "profile questionnaire you must ask before the first call to it or "
+        "create_simulation in a conversation -- follow that spec exactly as "
+        "written there (all 6 questions, lettered, in order), not a "
+        "paraphrase or a subset of it."
     ),
     host=os.environ.get("MCP_HOST", "0.0.0.0"),
     port=int(os.environ.get("PORT", "8000")),
@@ -262,9 +235,28 @@ def create_simulation(html: str) -> dict:
     runs live and interactively. Max 300KB; must be a real page (a <html>
     tag), not a fragment.
 
-    If you haven't gathered this conversation's CLASSROOM PROFILE yet (see
-    the server-level instructions), ask for it first -- the real ability
-    level in particular should set how complex/wordy the simulation is.
+    CLASSROOM PROFILE -- check this before calling: if you have NOT already
+    gathered one in THIS conversation (for this tool OR create_prep_sheet),
+    STOP and ask the teacher these 6 questions first, as plain chat text (not
+    a tool call), each phrased as lettered options to pick from -- never as
+    one open-ended question, and never skip any of the six:
+    (1) Class size -- a) Under 20  b) 20-40  c) Over 40 (or just the number).
+    (2) Real ability level of most students vs. the nominal grade --
+    a) At grade level  b) Below grade level (say which, if known)
+    c) Mixed levels.
+    (3) Everyday objects for demonstrations -- a) Available  b) Not available.
+    (4) Movement -- a) Children can move around  b) Seated only.
+    (5) Textbooks -- a) Each child has their own  b) One shared with the board.
+    (6) Language -- a) Add Telugu help alongside English  b) English only.
+    Wait for real answers before calling this tool. If the teacher moves on
+    without answering all six (e.g. just says "go on"), you may proceed, but
+    say plainly in your reply which of the six you defaulted and to what --
+    never generate silently on unstated assumptions. The real ability level
+    especially should set how complex/wordy the simulation is. Once
+    gathered (answered or disclosed-defaulted), reuse it for the rest of
+    THIS conversation for both this tool and create_prep_sheet -- don't ask
+    again unless the teacher corrects something. Does not carry over to a
+    new conversation.
     """
     return tools.create_simulation(html=html)
 
@@ -273,14 +265,36 @@ def create_simulation(html: str) -> dict:
 def create_prep_sheet(prep_sheet: PrepSheetRequest) -> dict:
     """Render a 6-bucket lesson prep sheet to a PDF and get back a shareable URL.
 
-    Use this for "create the prep material/prep sheet" requests -- NOT for
-    "create a simulation" (use create_simulation for that instead).
+    ALWAYS call this tool for "create the prep material/prep sheet/lesson
+    prep" requests -- do NOT write the lesson yourself as plain chat text
+    instead, even though you're capable of writing one unaided. The whole
+    point is a hosted, consistently-designed PDF the teacher can reopen and
+    share, not inline chat text. NOT for simulations (use create_simulation).
 
-    If you haven't gathered this conversation's CLASSROOM PROFILE yet (see
-    the server-level instructions), ask for it first -- class size, real
-    ability level, resource/seating/textbook/language toggles -- and factor
-    it into everything below (e.g. Challenge's PLAY must fit a seated
-    classroom if that's what the profile says).
+    CLASSROOM PROFILE -- check this before calling: if you have NOT already
+    gathered one in THIS conversation (for this tool OR create_simulation),
+    STOP and ask the teacher these 6 questions first, as plain chat text (not
+    a tool call), each phrased as lettered options to pick from -- never as
+    one open-ended question, never folded as a side-note into a different
+    question (e.g. a chapter-mismatch clarification), and never skip any of
+    the six:
+    (1) Class size -- a) Under 20  b) 20-40  c) Over 40 (or just the number).
+    (2) Real ability level of most students vs. the nominal grade --
+    a) At grade level  b) Below grade level (say which, if known)
+    c) Mixed levels.
+    (3) Everyday objects for demonstrations -- a) Available  b) Not available.
+    (4) Movement -- a) Children can move around  b) Seated only.
+    (5) Textbooks -- a) Each child has their own  b) One shared with the board.
+    (6) Language -- a) Add Telugu help alongside English  b) English only.
+    Wait for real answers before calling this tool. If the teacher moves on
+    without answering all six (e.g. just confirms a chapter and says "go
+    on"), you may proceed, but say plainly in your reply which of the six you
+    defaulted and to what -- never generate silently on unstated assumptions.
+    Factor the answers into everything below (e.g. Challenge's PLAY must fit
+    a seated classroom if that's what was said). Once gathered (answered or
+    disclosed-defaulted), reuse it for the rest of THIS conversation for both
+    this tool and create_simulation -- don't ask again unless the teacher
+    corrects something. Does not carry over to a new conversation.
 
     Before writing any bucket, assemble a SHARED CONTEXT in your own
     reasoning (don't send it as a field -- it just grounds what you write):
