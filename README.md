@@ -93,11 +93,27 @@ a database, which is a deliberate v1 trade-off, not built.
 
 ## Routing rule this encodes
 
-Specific request ("chapter 3 of Class 5 EVS") -> `list_books` (if book_id
-unknown) then `get_chapter`, direct and complete. Vague/topical request
-("explain photosynthesis for class 5") -> `search_textbook`. The tool
-descriptions are written so Claude picks the right one itself; there's no
-hardcoded routing logic in the server.
+Three cases, once `list_books` has resolved the `book_id`:
+
+1. **Whole chapter, no narrower topic** ("give me chapter 2 of Class 5 EVS")
+   -> `get_chapter(book_id, chapter_number)` -- full, complete, authoritative
+   text, no search overhead.
+2. **Topic named, chapter unknown** ("explain photosynthesis for class 5")
+   -> `search_textbook(query, book_id)`, searching the whole book.
+3. **Topic named AND chapter named** ("chapter 2, the tools topic") ->
+   `search_textbook(query, book_id, chapter)`, scoped to that chapter. This
+   is deliberately preferred over `get_chapter` here -- fetching an entire
+   chapter just to manually find one topic inside it costs far more tokens
+   than a scoped search already returns directly. `get_chapter` is only the
+   fallback if the scoped search comes back empty.
+
+Verified live against production: `search_textbook("agriculture tools",
+book_id="ts_scert_class5_environmental_studies_en", chapter=2)` returns
+"2.2 Agricultural equipment/tools" as the top-ranked chunk -- the exact
+section, not the whole ~3,400-word chapter.
+
+The tool descriptions are written so Claude picks the right one itself;
+there's no hardcoded routing logic in the server.
 
 ## Ambiguity across multiple boards (future-proofing, not yet triggerable)
 

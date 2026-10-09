@@ -30,20 +30,35 @@ mcp = FastMCP(
         "Tools for grounding answers in real, published school-textbook content "
         "(TS SCERT boards so far, more boards may be added later). If the user "
         "names a specific textbook/chapter, call list_books (if you don't "
-        "already have the exact book_id) then get_chapter for the full, "
-        "authoritative text. If list_books returns MORE THAN ONE match for what "
-        "the user asked (e.g. once multiple state boards publish the same "
-        "grade/subject), do not guess which one they meant and do not call "
-        "get_chapter yet -- ask the user to clarify, naming the real options "
-        "(e.g. \"I found this for Telangana SCERT, AP SCERT, and CBSE -- which "
-        "one does your school follow?\"), then proceed once they answer. Only "
-        "skip asking when there's exactly one match, or the user already named "
-        "the board. Call list_chapters first "
+        "already have the exact book_id) first. If list_books returns MORE "
+        "THAN ONE match for what the user asked (e.g. once multiple state "
+        "boards publish the same grade/subject), do not guess which one they "
+        "meant and do not fetch content yet -- ask the user to clarify, "
+        "naming the real options (e.g. \"I found this for Telangana SCERT, AP "
+        "SCERT, and CBSE -- which one does your school follow?\"), then "
+        "proceed once they answer. Only skip asking when there's exactly one "
+        "match, or the user already named the board. Call list_chapters first "
         "if you need to see what a book covers, or to pick the right chapter "
         "number, without paying the cost of fetching full content just to see "
-        "titles. Only use search_textbook "
-        "when the user asks about a topic without naming where to find it -- it "
-        "only covers a subset of books that have been semantically indexed. "
+        "titles. "
+        "THREE CASES for fetching actual content, once the book_id is known: "
+        "(1) the user wants a whole chapter with no narrower topic named (e.g. "
+        "\"give me chapter 2\") -- call get_chapter(book_id, chapter_number): "
+        "full, complete, authoritative text, no search overhead. "
+        "(2) the user names a specific topic/sub-section but NOT which chapter "
+        "it's in (e.g. \"explain photosynthesis for class 5\") -- call "
+        "search_textbook(query, book_id=...) with no chapter filter, so it "
+        "searches the whole book. "
+        "(3) the user names BOTH a chapter AND a specific topic within it "
+        "(e.g. \"chapter 2, the tools topic\") -- call search_textbook(query, "
+        "book_id=..., chapter=...), scoped to that chapter. Do NOT call "
+        "get_chapter here -- fetching the whole chapter just to manually find "
+        "one topic inside it burns far more tokens than a scoped search "
+        "already returns directly. Only fall back to get_chapter in this case "
+        "if search_textbook returns nothing useful for that chapter. "
+        "search_textbook only covers books that have been semantically "
+        "indexed (currently the full published catalog, but get_chapter "
+        "remains the complete-coverage fallback for case 1). "
         "The underlying services are free-tier and can take ~20-30s to wake up "
         "from idle -- if a tool call errors saying the service is waking up or "
         "didn't respond in time, simply call the same tool again once; it will "
@@ -133,9 +148,16 @@ def list_books(
 def get_chapter(book_id: str, chapter_number: int) -> dict:
     """Fetch one chapter's full, clean text and image URLs by exact book_id and number.
 
-    Prefer this over search_textbook whenever the user names a specific
-    textbook/chapter directly -- it returns the complete chapter, covers every
-    published book, and costs no embedding/search overhead.
+    Use this when the user wants the WHOLE chapter with no narrower topic
+    named (e.g. "give me chapter 2") -- it returns the complete chapter,
+    covers every published book, and costs no embedding/search overhead.
+
+    If the user names a specific topic/sub-section WITHIN a chapter (e.g.
+    "chapter 2, the tools topic"), prefer search_textbook(query, book_id,
+    chapter=...) instead -- it returns just the relevant section at a
+    fraction of the token cost of fetching and reading the entire chapter
+    yourself. Only use get_chapter in that case as a fallback if the scoped
+    search comes back empty.
 
     The returned `content` has `<img id="...">` placeholders matched by
     `image_id` in the `images` list -- when explaining a part of the chapter
@@ -170,15 +192,23 @@ def search_textbook(
 ) -> dict:
     """Semantically search textbook content for a topic/concept.
 
-    Use this only when the user asks about a topic without naming an exact
-    chapter. Pass board/grade/subject if known, instead of book_id, and this
-    will resolve the book_id itself; if resolution is ambiguous, the result's
+    Use this whenever the user names a specific topic, even if they ALSO name
+    the chapter it's in (e.g. "chapter 2, the tools topic") -- pass `chapter`
+    to scope the search to just that chapter instead of searching the whole
+    book. This is strictly better than get_chapter whenever a topic is named:
+    it returns the relevant section directly, at a fraction of the token cost
+    of fetching the whole chapter and reading through it yourself. Only skip
+    this and use get_chapter directly when the user wants the ENTIRE chapter
+    with no narrower topic in mind.
+
+    Pass board/grade/subject if known, instead of book_id, and this will
+    resolve the book_id itself; if resolution is ambiguous, the result's
     `candidate_books` lists the matches instead of guessing -- ask the user to
     narrow it down, or call list_books yourself.
 
     Only a subset of published books are indexed for search. If this returns
-    no useful results for a book you expect to have content, fall back to
-    list_books + get_chapter instead.
+    no useful results for a book/chapter you expect to have content, fall
+    back to get_chapter instead.
 
     The `images` result list has real textbook photos relevant to the query
     (`caption` + `url`) -- embed the relevant ones in your answer as markdown
